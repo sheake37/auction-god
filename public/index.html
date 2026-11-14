@@ -1,0 +1,445 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>경매의 신!</title>
+<style>
+
+:root{--bg:#f6f3ee;--card:#fff;--ink:#241f1a;--mut:#7a7167;--line:#2b2620;--acc:#e0552b;--gold:#f2b705;--ok:#2e9e5b;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#1b1815;--card:#2a2621;--ink:#f3ede4;--mut:#a39a8e;--line:#f3ede4;--acc:#ff7a4d;--gold:#ffd23f;--ok:#4cc07f}}
+:root[data-theme="dark"]{--bg:#1b1815;--card:#2a2621;--ink:#f3ede4;--mut:#a39a8e;--line:#f3ede4;--acc:#ff7a4d;--gold:#ffd23f;--ok:#4cc07f}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:"Pretendard","Noto Sans KR",system-ui,sans-serif;min-height:100vh}
+button,input{font:inherit;color:inherit}
+button{cursor:pointer}
+.wrap{max-width:1280px;margin:0 auto;padding:16px}
+h1{margin:8px 0 4px;font-size:26px}
+.sub{color:var(--mut);margin:0 0 16px}
+.panel{background:var(--card);border:3px solid var(--line);border-radius:14px;padding:14px;margin-bottom:14px}
+.panel h2{margin:0 0 10px;font-size:17px}
+.row{display:flex;gap:8px;align-items:center;margin-bottom:8px}
+.row input[type=text],.row input[type=number]{flex:1;min-width:0;padding:8px 10px;border:2px solid var(--line);border-radius:8px;background:transparent}
+.av{width:44px;height:44px;border:2px solid var(--line);border-radius:8px;background:var(--bg);display:grid;place-items:center;font-size:24px;overflow:hidden;padding:0;flex:none}
+.av img,.pic img{width:100%;height:100%;object-fit:cover}
+.btn{border:2px solid var(--line);background:var(--card);border-radius:10px;padding:8px 14px;font-weight:700}
+.btn.pri{background:var(--acc);color:#fff;border-color:var(--acc)}
+.btn.sm{padding:4px 10px;font-size:13px}
+.big{width:100%;padding:14px;font-size:18px}
+.num{width:150px!important;flex:none!important}
+/* game stage */
+.stage{display:grid;grid-template-columns:minmax(120px,1fr) minmax(0,2.3fr) minmax(120px,1fr);gap:16px;align-items:start}
+.col{display:flex;flex-direction:column;gap:12px}
+.pl{background:var(--card);border:3px solid var(--line);border-radius:12px;padding:8px;text-align:center;transition:transform .12s,box-shadow .12s;user-select:none}
+.bidbtn{width:100%;margin-top:6px;padding:6px 4px;font-size:13px}.btn:disabled{opacity:.45;cursor:not-allowed}.pop{animation:pop .5s}@keyframes pop{0%{transform:scale(.3);opacity:0}70%{transform:scale(1.2)}100%{transform:scale(1);opacity:1}}
+.pl .pic{width:100%;aspect-ratio:1;border:2px solid var(--line);border-radius:8px;display:grid;place-items:center;font-size:44px;overflow:hidden;background:var(--bg)}
+.pl .nm{font-weight:800;margin:6px 0 4px;font-size:14px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.pl .amt{border:2px solid var(--line);border-radius:6px;padding:3px 4px;font-weight:800;font-size:14px}
+.pl .bal{font-size:11px;color:var(--mut);margin-top:3px}
+.pl.lead{box-shadow:0 0 0 4px var(--gold);transform:translateY(-2px)}
+.pl.lead .amt{background:var(--gold);color:#241f1a}
+.pl.shake{animation:sh .3s}
+select{font:inherit;color:inherit;background:var(--card);border:2px solid var(--line);border-radius:8px;padding:6px}
+.bidin{width:100%;margin-top:6px;padding:6px 4px;border:2px solid var(--line);border-radius:8px;background:transparent;text-align:center;font-size:13px}
+#toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%);background:var(--ink);color:var(--bg);padding:10px 18px;border-radius:20px;font-weight:700;opacity:0;pointer-events:none;transition:opacity .2s;z-index:9}#toast.on{opacity:1}
+@keyframes sh{25%{transform:translateX(-6px)}75%{transform:translateX(6px)}}
+.ctr{display:flex;flex-direction:column;gap:12px;align-items:stretch}
+.title{border:3px solid var(--line);background:var(--card);border-radius:10px;padding:12px;text-align:center;font-size:22px;font-weight:900}
+.photo{position:relative;border:3px solid var(--line);background:var(--card);border-radius:12px;aspect-ratio:4/3;display:grid;place-items:center;font-size:clamp(80px,16vw,170px);overflow:hidden}
+.photo img{width:100%;height:100%;object-fit:cover}
+.msg{position:absolute;inset:0;background:rgba(0,0,0,.72);color:#fff;display:grid;place-items:center;text-align:center;font-size:clamp(20px,4vw,34px);font-weight:900;padding:16px}
+.price{text-align:center}
+.price small{color:var(--mut);display:block;font-weight:700}
+.price b{font-size:clamp(30px,6vw,48px);color:var(--acc)}
+.bar{height:8px;border:2px solid var(--line);border-radius:6px;overflow:hidden;background:var(--card)}
+.bar i{display:block;height:100%;background:var(--acc);transition:width 1s linear}
+.chips{display:flex;gap:6px;justify-content:center;flex-wrap:wrap}
+.chip{border:2px solid var(--line);background:var(--card);border-radius:20px;padding:4px 12px;font-weight:700;font-size:13px}
+.chip.on{background:var(--ink);color:var(--bg)}
+.host{display:flex;gap:12px;align-items:center;justify-content:center}
+.host .pic{width:84px;height:84px;border:3px solid var(--line);border-radius:10px;display:grid;place-items:center;font-size:44px;background:var(--card);overflow:hidden}
+.host .acts{display:flex;flex-direction:column;gap:6px}
+.hint{text-align:center;color:var(--mut);font-size:13px}
+table{width:100%;border-collapse:collapse}
+td,th{padding:8px;border-bottom:1px solid var(--mut);text-align:left;font-size:14px}
+@media (min-width:761px){
+ .stage:has(.col>.pl:nth-child(3)){grid-template-columns:minmax(0,1.8fr) minmax(0,2.2fr) minmax(0,1.8fr);gap:12px}
+ .stage:has(.col>.pl:nth-child(3)) .col{display:grid;grid-template-columns:1fr 1fr;gap:10px;align-content:start}
+ .stage:has(.col>.pl:nth-child(3)) .pl{padding:6px}
+ .stage:has(.col>.pl:nth-child(3)) .pl .pic{font-size:34px}
+}
+@media (max-width:760px){
+ .stage{grid-template-columns:repeat(4,1fr)}
+ .ctr{grid-column:1/-1;order:-1}
+ .col{display:contents}
+ .pl .pic{font-size:30px}
+}
+
+
+.code{background:var(--gold);color:#241f1a;border-radius:8px;padding:0 10px;letter-spacing:3px}
+.pl.mine{border-color:var(--acc)}.pl.off{opacity:.5}
+.row input[readonly]{opacity:.8}
+.wrap{padding-top:64px}
+
+</style>
+</head>
+<body>
+<div class="wrap" id="app"></div>
+<script src="/socket.io/socket.io.js"></script>
+<script>
+let AC;
+function tone(f,t0,dur,type,vol,f2){
+ const t=AC.currentTime+t0,o=AC.createOscillator(),g=AC.createGain();
+ o.type=type;o.frequency.setValueAtTime(f,t);
+ if(f2)o.frequency.exponentialRampToValueAtTime(f2,t+dur);
+ g.gain.setValueAtTime(vol,t);g.gain.exponentialRampToValueAtTime(.001,t+dur);
+ o.connect(g);g.connect(AC.destination);if(WET)g.connect(rev());o.start(t);o.stop(t+dur+.05);
+}
+let WET=false,REV;
+function rev(){
+ if(!REV){const n=Math.floor(AC.sampleRate*1.4),b=AC.createBuffer(2,n,AC.sampleRate);
+  for(let c=0;c<2;c++){const d=b.getChannelData(c);for(let i=0;i<n;i++)d[i]=(Math.random()*2-1)*Math.pow(1-i/n,3.5)}
+  REV=AC.createConvolver();REV.buffer=b;const g=AC.createGain();g.gain.value=.4;REV.connect(g);g.connect(AC.destination)}
+ return REV;
+}
+function knock(t0,vol){
+ const t=AC.currentTime+t0,len=Math.floor(AC.sampleRate*.08),buf=AC.createBuffer(1,len,AC.sampleRate),d=buf.getChannelData(0);
+ for(let i=0;i<len;i++)d[i]=(Math.random()*2-1)*Math.exp(-i/(AC.sampleRate*.008));
+ const ns=AC.createBufferSource(),bp=AC.createBiquadFilter(),ng=AC.createGain();
+ ns.buffer=buf;bp.type="bandpass";bp.frequency.value=1600;bp.Q.value=.7;ng.gain.value=vol*1.1;
+ ns.connect(bp);bp.connect(ng);ng.connect(AC.destination);ns.start(t);
+ tone(300,t0,.22,"triangle",vol*.9,170);
+ tone(640,t0,.12,"sine",vol*.6,420);
+ tone(120,t0,.28,"sine",vol*.8,70);WET=false;
+}
+function sfx(k){
+ try{
+  AC=AC||new (window.AudioContext||window.webkitAudioContext)();
+  if(AC.state==="suspended")AC.resume();
+  if(k==="win"){
+   [[523,0,.12],[523,.14,.12],[523,.28,.12],[659,.44,.2],[784,.68,.2],[1047,.95,.7]].forEach(([f,t,d])=>tone(f,t,d,"square",.14));
+   [[523,.95],[659,.95],[784,.95]].forEach(([f,t])=>tone(f,t,.7,"sawtooth",.07));
+  }else if(k==="lose"){
+   tone(150,0,.4,"sawtooth",.3,55);tone(120,.45,.3,"sawtooth",.25,45);
+  }else{
+   if(k==="bid"){tone(1319,0,.9,"sine",.25);tone(2637,0,.5,"sine",.06)}
+   else if(k==="hammer"){[[0,.9],[.55,.95],[1.1,1]].forEach(([t,v])=>knock(t,v*.5))}
+   else if(k==="pass"){tone(330,0,.35,"triangle",.2,200)}
+   else{tone(660,0,.15,"sine",.2);tone(880,.13,.3,"sine",.2)}
+  }
+ }catch(e){}
+}
+
+/* ---------- BGM ---------- */
+let bgmOn=true,bgVol=.5,BM,BGT=null,bgStep=0,bgNext=0;
+try{bgmOn=localStorage.getItem("auction_bgm")!=="0";const v=parseFloat(localStorage.getItem("auction_bgmvol"));if(v>=0&&v<=1)bgVol=v}catch(e){}
+const BCH=[[48,55,59,64],[45,55,60,64],[41,57,60,64],[43,59,62,64]];
+const mt=m=>440*Math.pow(2,(m-69)/12);
+function bnote(f,t,dur,type,vol,att){
+ const o=AC.createOscillator(),g=AC.createGain();o.type=type;o.frequency.value=f;
+ g.gain.setValueAtTime(.0001,t);g.gain.linearRampToValueAtTime(vol,t+att);g.gain.exponentialRampToValueAtTime(.0001,t+dur);
+ o.connect(g);g.connect(BM);o.start(t);o.stop(t+dur+.1);
+}
+function bgTick(){
+ if(!AC||!bgmOn)return;
+ while(bgNext<AC.currentTime+.6){
+  const s=bgStep,ch=BCH[Math.floor(s/8)%4],t=bgNext;
+  if(s%8===0)ch.forEach(m=>bnote(mt(m),t,4.6,"sine",.03,.9));
+  if(Math.random()>.18){const n=ch[[0,2,3,2,1,3,2,1][s%8]]+12;bnote(mt(n),t,1.1,"sine",.05,.01);bnote(mt(n+12),t,.6,"triangle",.012,.01)}
+  bgStep++;bgNext+=.55;
+ }
+}
+function bgmStart(){
+ try{
+  AC=AC||new (window.AudioContext||window.webkitAudioContext)();
+  if(AC.state==="suspended")AC.resume();
+  if(!BM){BM=AC.createGain();BM.gain.value=0;BM.connect(AC.destination)}
+  BM.gain.setTargetAtTime(1.4*bgVol,AC.currentTime,.4);
+  bgNext=AC.currentTime+.1;
+  if(!BGT)BGT=setInterval(bgTick,200);
+ }catch(e){}
+}
+function applyVol(){if(BM&&AC&&bgmOn)BM.gain.setTargetAtTime(1.4*bgVol,AC.currentTime,.1)}
+function bgmStop(){if(BM&&AC)BM.gain.setTargetAtTime(0,AC.currentTime,.25)}
+const bb=document.createElement("button");bb.id="bgm";bb.className="btn sm";
+
+const bw=document.createElement("div");
+bw.style.cssText="position:fixed;top:calc(10px + env(safe-area-inset-top,0px));right:10px;z-index:8;display:flex;gap:8px;align-items:center;background:var(--card);border:2px solid var(--line);border-radius:12px;padding:4px 8px";
+const vs=document.createElement("input");vs.type="range";vs.min=0;vs.max=100;vs.value=Math.round(bgVol*100);
+vs.style.cssText="width:90px;accent-color:var(--acc)";vs.title="BGM 볼륨";
+vs.oninput=()=>{bgVol=vs.value/100;try{localStorage.setItem("auction_bgmvol",String(bgVol))}catch(e){}applyVol()};
+bw.append(vs,bb);document.body.append(bw);
+const bgUI=()=>bb.textContent=bgmOn?"🎵 BGM 켜짐":"🔇 BGM 꺼짐";
+bgUI();
+bb.onclick=()=>{bgmOn=!bgmOn;try{localStorage.setItem("auction_bgm",bgmOn?"1":"0")}catch(e){}bgUI();if(bgmOn)bgmStart();else bgmStop()};
+addEventListener("pointerdown",()=>{if(bgmOn&&(!BGT||!AC||AC.state!=="running"))bgmStart()});
+
+/* ===== 공통 ===== */
+const $=s=>document.querySelector(s);
+const esc=s=>String(s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+const fmt=n=>Math.round(n).toLocaleString("ko-KR")+"원";
+function fm(el){const d=el.value.replace(/[^\d]/g,"");el.value=d?Number(d).toLocaleString("ko-KR"):"";return Number(d)||0}
+const vis=(src,fb)=>src?`<img src="${src}" alt="">`:fb;
+const ak=(u,s)=>u+":"+(s||1);
+const col=d=>d>0?"#2e9e5b":d<0?"#e0552b":"inherit";
+const sg=d=>(d>0?"+":"")+fmt(d);
+function toast(t){let e=document.getElementById("toast");if(!e){e=document.createElement("div");e.id="toast";document.body.append(e)}e.textContent=t;e.className="on";clearTimeout(toast.t);toast.t=setTimeout(()=>e.className="",2400)}
+function arm(b,txt,fn){if(!b.armed){const o=b.textContent;b.armed=true;b.textContent=txt;setTimeout(()=>{b.armed=false;b.textContent=o},3000);return}fn()}
+function pick(cb,max){const f=document.createElement("input");f.type="file";f.accept="image/*";
+ f.onchange=()=>{const r=new FileReader();r.onload=()=>{const im=new Image();im.onload=()=>{
+  const m=max||256,k=Math.min(1,m/Math.max(im.width,im.height)),c=document.createElement("canvas");
+  c.width=Math.round(im.width*k);c.height=Math.round(im.height*k);
+  const x=c.getContext("2d");x.fillStyle="#fff";x.fillRect(0,0,c.width,c.height);x.imageSmoothingQuality="high";x.drawImage(im,0,0,c.width,c.height);
+  cb(c.toDataURL("image/jpeg",.88))};im.src=r.result};if(f.files[0])r.readAsDataURL(f.files[0])};f.click()}
+const EM=["🦊","🐼","🐸","🦄","🐯","🐙","🐧","🦁","🐶","🐱"];
+const LS={get:k=>{try{return localStorage.getItem(k)}catch(e){return null}},set:(k,v)=>{try{localStorage.setItem(k,v);return true}catch(e){return false}},del:k=>{try{localStorage.removeItem(k)}catch(e){}}};
+
+/* ===== 상태 ===== */
+const socket=io();
+let token=LS.get("aog_token");if(!token){token=Math.random().toString(36).slice(2)+Date.now().toString(36);LS.set("aog_token",token)}
+const urlRoom=new URLSearchParams(location.search).get("room")||"";
+let me=null,st=null,A={},cfg=null,view="",draft="",ldraft=null,ctm;
+let prof={name:LS.get("aog_name")||"",emoji:EM[Math.floor(Math.random()*EM.length)],img:null};
+
+socket.on("connect",()=>{
+ const saved=LS.get("aog_room");
+ if(me)doJoin(me.code,true);
+ else if(saved&&(!urlRoom||urlRoom===saved))doJoin(saved,true);
+});
+socket.on("state",s=>{
+ const o=st;st=s;
+ if(o&&(o.cur!==s.cur||o.phase!==s.phase||(o.item&&s.item&&o.item.uid!==s.item.uid)))draft="";
+ if(!o||o.phase!==s.phase)ldraft=null;
+ snd(o,s);render();
+});
+socket.on("asset",a=>{A[a.key]=a.data;if(me&&st)render()});
+socket.on("assets",a=>{Object.assign(A,a)});
+socket.on("cfg",c=>{if(me&&me.role==="host"&&!cfg){cfg=c;cfg.hostImg=null;cfg.rounds.forEach(r=>r.items.forEach(o=>{o.img=null;o.img2=null}));saveCfg()}});
+socket.on("toast",toast);
+
+function doJoin(code,silent){
+ socket.emit("join",{code,token,name:prof.name,emoji:prof.emoji,img:prof.img},res=>{
+  if(res.error){if(silent){LS.del("aog_room");me=null;st=null;home()}else toast(res.error);return}
+  const first=!me;
+  me=res;LS.set("aog_room",res.code);view="";draft="";
+  if(urlRoom)history.replaceState(null,"","/");
+  if(res.role==="host"&&first&&!cfg){const lc=loadCfg();if(lc){cfg=lc;pushAll()}}
+  if(cfg&&cfg.hostImg)A[ak("host")]=cfg.hostImg;
+  if(st)render();
+ });
+}
+function leave(){LS.del("aog_room");me=null;st=null;view="";home()}
+
+/* ===== 호스트 설정 저장/전송 ===== */
+function loadCfg(){try{const c=JSON.parse(LS.get("aog_cfg")||"null");if(c&&Array.isArray(c.rounds))return c}catch(e){}return null}
+function saveCfg(){if(cfg&&!LS.set("aog_cfg",JSON.stringify(cfg))&&!saveCfg.w){saveCfg.w=1;toast("사진 용량이 커서 설정 자동 저장이 안 될 수 있어요")}}
+function sendCfg(){
+ if(!cfg)return;
+ socket.emit("cfg",{budget:cfg.budget,rate:cfg.rate,rounds:cfg.rounds.map(rd=>({theme:rd.theme,loan:rd.loan,items:rd.items.map(({uid,name,emoji,start,value})=>({uid,name,emoji,start,value}))}))});
+}
+function sync(){saveCfg();clearTimeout(ctm);ctm=setTimeout(sendCfg,400)}
+function pushAll(){
+ sendCfg();
+ if(cfg.hostImg)socket.emit("img",{uid:"host",slot:1,data:cfg.hostImg});
+ cfg.rounds.forEach(rd=>rd.items.forEach(o=>{
+  if(o.img)socket.emit("img",{uid:o.uid,slot:1,data:o.img});
+  if(o.img2)socket.emit("img",{uid:o.uid,slot:2,data:o.img2});
+ }));
+}
+const loanOf=ri=>{const r=cfg.rounds[ri];if(r&&r.loan!=null)return r.loan;return ri<2?0:ri===2?1e7:ri===3?5e7:1e8};
+
+/* ===== 효과음 ===== */
+function snd(o,s){
+ if(!o)return;
+ if(o.phase==="auction"&&s.phase==="auction"&&o.item.uid===s.item.uid&&(o.cur!==s.cur||o.leader!==s.leader))sfx("bid");
+ else if(o.phase==="auction"&&s.phase==="sold")sfx(s.last&&s.last.sold?"hammer":"pass");
+ else if(s.phase==="reveal"&&s.shown&&!(o.phase==="reveal"&&o.shown&&o.rpos===s.rpos)){const d=s.buy?s.value-s.buy.price:0;sfx(s.buy?(d>0?"win":d<0?"lose":"even"):"pass")}
+ else if(o.phase==="loan"&&s.phase==="loan"&&o.players.map(p=>p.loan).join()!==s.players.map(p=>p.loan).join())sfx("bid");
+}
+
+/* ===== 홈 ===== */
+function home(){
+ $("#app").innerHTML=`<h1>🔨 경매의 신!</h1><p class="sub">방을 만들고 코드를 공유하면, 친구들이 각자 컴퓨터나 폰에서 입찰해요. 계정은 필요 없어요.</p>
+ <div class="panel"><h2>호스트로 방 만들기</h2><button class="btn pri big" id="mk">방 만들기</button></div>
+ <div class="panel"><h2>친구 방에 참가하기</h2>
+  <div class="row"><input type="text" id="rc" inputmode="numeric" maxlength="4" placeholder="방 코드 4자리" value="${esc(urlRoom)}"></div>
+  <div class="row"><button class="av" id="pa" title="사진 올리기">${vis(prof.img,prof.emoji)}</button><button class="btn sm" id="em">이모지 바꾸기</button>
+  <input type="text" id="pn" maxlength="8" placeholder="이름" value="${esc(prof.name)}"></div>
+  <button class="btn pri big" id="jn">참가하기</button></div>`;
+ $("#mk").onclick=()=>socket.emit("create",{token},r=>doJoin(r.code,false));
+ $("#pa").onclick=()=>pick(d=>{prof.img=d;home()});
+ $("#em").onclick=()=>{prof.emoji=EM[(EM.indexOf(prof.emoji)+1)%EM.length];home()};
+ $("#pn").oninput=e=>{prof.name=e.target.value;LS.set("aog_name",prof.name)};
+ $("#jn").onclick=()=>{const c=$("#rc").value.trim();if(!/^\d{4}$/.test(c))return toast("방 코드 4자리를 입력해주세요");if(!prof.name.trim())return toast("이름을 입력해주세요");doJoin(c,false)};
+}
+
+/* ===== 렌더 ===== */
+function render(){
+ if(!me||!st)return;
+ const v=st.phase+":"+me.role;
+ if(st.phase==="lobby"){if(view===v){updLobby();return}view=v;lobby();return}
+ view=v;
+ ({intro:introV,loan:loanV,auction:stage,sold:stage,reveal:revV,settle:settleV,end:endV})[st.phase]();
+}
+const leaveBtn=()=>`<button class="btn sm" id="lv">나가기</button>`;
+const bindLeave=()=>{const b=$("#lv");if(b)b.onclick=()=>arm(b,"정말 나갈까요?",leave)};
+const bindAct=()=>{const a=$("#act");if(a)a.onclick=()=>socket.emit("adv")};
+
+/* ===== 로비 ===== */
+function plist(){return st.players.map(p=>`<div class="row"><div class="av">${vis(A[ak("p:"+p.id)],p.emoji)}</div><b>${esc(p.name)}</b>${p.id===me.pid?" (나)":""}${p.on?"":" <span class='hint'>연결 끊김</span>"}</div>`).join("")||"<p class='hint' style='text-align:left'>아직 아무도 없어요</p>"}
+function updLobby(){const l=$("#plist");if(l){l.innerHTML=plist();$("#cnt").textContent=`(${st.players.length}/8)`}}
+function lobby(){
+ const host=me.role==="host";
+ if(host&&!cfg)cfg={budget:st.budget,rate:st.rate,hostImg:null,rounds:[{theme:"",items:[]}]};
+ $("#app").innerHTML=`<h1>🔨 경매의 신! <span class="code">${st.code}</span></h1>
+ <p class="sub">${host?"친구들에게 방 코드나 아래 링크를 보내주세요. 친구들이 들어오면 시작할 수 있어요.":"호스트가 시작하길 기다리는 중이에요 ⏳"}</p>
+ <div class="row"><input type="text" readonly id="lnk" value="${location.origin}/?room=${st.code}"><button class="btn sm" id="cp">복사</button></div>
+ <div class="panel"><h2>참가자 <span id="cnt"></span></h2><div id="plist"></div></div>
+ ${host?`<div class="panel"><h2>설정</h2>
+  <div class="row"><span>시작 금액</span><input class="num" type="text" inputmode="numeric" id="bud" value="${cfg.budget.toLocaleString("ko-KR")}"><span>원</span><span style="margin-left:auto">호스트 사진</span><button class="av" id="hav">${vis(cfg.hostImg,"🎤")}</button></div>
+  <div class="row"><span>🏦 대출 이자율</span><input class="num" type="number" id="rate" min="0" max="300" value="${cfg.rate}"><span>% · 3라운드부터 대출 가능</span></div></div>
+ <div id="rds"></div><p><button class="btn sm" id="addR">+ 라운드 추가</button></p>
+ <button class="btn pri big" id="go">경매 시작!</button>`:""}
+ <p>${leaveBtn()}</p>`;
+ updLobby();
+ $("#cp").onclick=()=>{$("#lnk").select();try{navigator.clipboard.writeText($("#lnk").value)}catch(e){document.execCommand("copy")}toast("링크를 복사했어요")};
+ bindLeave();
+ if(!host)return;
+ $("#bud").oninput=e=>{cfg.budget=Math.max(100000,fm(e.target));sync()};
+ $("#rate").oninput=e=>{cfg.rate=Math.max(0,Math.min(300,+e.target.value||0));sync()};
+ $("#hav").onclick=()=>pick(d=>{cfg.hostImg=d;A[ak("host")]=d;socket.emit("img",{uid:"host",slot:1,data:d});$("#hav").innerHTML=vis(d,"🎤");saveCfg()});
+ $("#addR").onclick=()=>{if(cfg.rounds.length<10){cfg.rounds.push({theme:"",items:[]});rounds();sync()}};
+ $("#go").onclick=()=>{clearTimeout(ctm);sendCfg();setTimeout(()=>socket.emit("start"),150)};
+ rounds();
+}
+function rounds(){
+ const box=$("#rds");box.innerHTML="";
+ cfg.rounds.forEach((rd,ri)=>{
+  const pn=document.createElement("div");pn.className="panel";
+  pn.innerHTML=`<h2>라운드 ${ri+1}</h2>
+  <div class="row"><span>테마</span><input type="text" maxlength="30" placeholder="예) 보물 사냥" value="${esc(rd.theme)}"><button class="btn sm">라운드 삭제</button></div>
+  ${ri>=2?`<div class="row"><span>🏦 대출 한도</span><select class="loansel">${[["대출 없음",0],["1천만원",1e7],["5천만원",5e7],["1억원",1e8]].map(([t,v])=>`<option value="${v}" ${loanOf(ri)===v?"selected":""}>${t}</option>`).join("")}</select></div>`:""}
+  <p class="hint" style="text-align:left;margin:0 0 8px">사진 · 이름 · 시작가 · 가치(비공개) — 사진 2장: 왼쪽은 경매·가치 공개 전, 오른쪽(+2)은 가치 공개 후</p>
+  <div class="its"></div><button class="btn sm">+ 물품 추가</button>`;
+  const q=s=>pn.querySelector(s);
+  q("input").oninput=e=>{rd.theme=e.target.value;sync()};
+  const ls=q(".loansel");if(ls)ls.onchange=e=>{rd.loan=+e.target.value;sync()};
+  const db=q(".row button");db.onclick=()=>arm(db,"정말 삭제?",()=>{if(cfg.rounds.length<2)return toast("라운드가 최소 1개는 있어야 해요");cfg.rounds.splice(ri,1);rounds();sync()});
+  const its=q(".its");
+  rd.items.forEach((o,ii)=>{
+   const r=document.createElement("div");r.className="row";
+   r.innerHTML=`<button class="av" title="1번 사진 (경매·가치 공개 전)">${vis(o.img,o.emoji)}</button><button class="av" title="2번 사진 (가치 공개 후)">${o.img2?`<img src="${o.img2}" alt="">`:"<span style='font-size:13px'>+2</span>"}</button><input type="text" maxlength="14" value="${esc(o.name)}"><input class="num" type="text" inputmode="numeric" value="${o.start.toLocaleString("ko-KR")}" title="시작가" placeholder="시작가"><input class="num" type="text" inputmode="numeric" value="${o.value.toLocaleString("ko-KR")}" title="가치(비공개)" placeholder="가치"><button class="btn sm">삭제</button>`;
+   r.children[0].onclick=()=>pick(d=>{o.img=d;socket.emit("img",{uid:o.uid,slot:1,data:d});rounds();saveCfg()},1280);
+   r.children[1].onclick=()=>pick(d=>{o.img2=d;socket.emit("img",{uid:o.uid,slot:2,data:d});rounds();saveCfg()},1280);
+   r.children[2].oninput=e=>{o.name=e.target.value;sync()};
+   r.children[3].oninput=e=>{o.start=fm(e.target);sync()};
+   r.children[4].oninput=e=>{o.value=fm(e.target);sync()};
+   r.children[5].onclick=()=>{rd.items.splice(ii,1);rounds();sync()};
+   its.append(r)});
+  q(".its + button").onclick=()=>{if(rd.items.length<12){rd.items.push({uid:"i"+Math.random().toString(36).slice(2,10),name:"새 물품",emoji:"📦",start:1000000,value:1500000,img:null,img2:null});rounds();sync()}};
+  box.append(pn)});
+}
+
+/* ===== 라운드 준비 ===== */
+function introV(){
+ const host=me.role==="host";
+ $("#app").innerHTML=`<div style="text-align:center;padding:50px 10px">
+ <p class="sub" style="font-size:20px;letter-spacing:6px">ROUND</p>
+ <h1 style="font-size:clamp(56px,14vw,120px);margin:0">${st.R+1} <span style="color:var(--mut);font-size:.35em">/ ${st.nR}</span></h1>
+ ${st.theme?`<div class="title" style="display:inline-block;margin:28px 0;font-size:clamp(22px,5vw,40px);padding:16px 28px">🎯 ${esc(st.theme)}</div>`:`<div style="height:28px"></div>`}
+ <div>${host?`<button class="btn pri big" id="act" style="max-width:360px">라운드 시작!</button>`:`<p class="hint">호스트가 시작하길 기다리는 중...</p>`}</div>
+ <p style="margin-top:24px">${leaveBtn()}</p></div>`;
+ bindAct();bindLeave();
+}
+
+/* ===== 대출 ===== */
+function loanV(){
+ const host=me.role==="host";
+ const card=p=>{
+  const mine=p.id===me.pid,v=ldraft!==null?ldraft:(p.loan||0);
+  return `<div class="pl ${mine?"mine":""}"><div class="pic">${vis(A[ak("p:"+p.id)],p.emoji)}</div><div class="nm">${esc(p.name)}${mine?" (나)":""}</div><div class="amt">잔액 ${fmt(p.money)}</div><div class="bal">${p.loan?"대출 "+fmt(p.loan)+" → 상환 "+fmt(Math.round(p.loan*(1+st.rate/100))):"대출 없음"}</div>${mine?`<input class="bidin" id="lin" type="text" inputmode="numeric" placeholder="0 ~ ${st.limit.toLocaleString("ko-KR")}" value="${v?Number(v).toLocaleString("ko-KR"):""}"><button class="btn pri bidbtn" id="lbtn">대출받기</button>`:""}</div>`};
+ const had=document.activeElement&&document.activeElement.id==="lin";
+ $("#app").innerHTML=`<h1>🏦 대출 시간</h1><p class="sub">1인당 한도 ${fmt(st.limit)} · 이자 ${st.rate}% — 이번 라운드가 끝나면 원금과 이자를 갚아야 해요. 필요한 만큼만 빌리세요!</p>
+ <div class="panel"><div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:12px">${st.players.map(card).join("")}</div></div>
+ ${host?`<button class="btn pri big" id="act">🔨 경매 시작</button>`:`<p class="hint">내 카드에 금액을 적고 "대출받기"를 눌러요. 호스트가 시작하면 경매가 열려요.</p>`}
+ <p>${leaveBtn()}</p>`;
+ const li=$("#lin");
+ if(li){li.oninput=()=>{ldraft=String(fm(li))};li.onkeydown=e=>{if(e.key==="Enter")$("#lbtn").click()};
+  $("#lbtn").onclick=()=>{const a=Number(li.value.replace(/,/g,""))||0;if(a>st.limit)toast(`한도는 ${fmt(st.limit)}예요`);socket.emit("loan",{amt:a});ldraft=null};
+  if(had){li.focus();li.setSelectionRange(li.value.length,li.value.length)}}
+ bindAct();bindLeave();
+}
+
+/* ===== 경매 ===== */
+function pcard(p){
+ const lead=st.leader===p.id,mine=me.pid===p.id,b=st.bids[p.id],can=mine&&st.phase==="auction"&&!lead;
+ return `<div class="pl ${lead?"lead":""} ${mine?"mine":""} ${p.on?"":"off"}"><div class="pic">${vis(A[ak("p:"+p.id)],p.emoji)}</div><div class="nm">${esc(p.name)}${mine?" (나)":""}</div><div class="amt">${b?fmt(b):"-"}</div><div class="bal">잔액 ${fmt(p.money)}</div>${mine?`<input class="bidin" id="myin" type="text" inputmode="numeric" placeholder="${st.min.toLocaleString("ko-KR")}" value="${draft?Number(draft).toLocaleString("ko-KR"):""}" ${can?"":"disabled"}><button class="btn pri bidbtn" id="mybid" ${can?"":"disabled"}>${lead?"최고가!":"입찰"}</button>`:""}</div>`;
+}
+function stage(){
+ const host=me.role==="host",it=st.item,n=st.players.length,h=Math.ceil(n/2);
+ const had=document.activeElement&&document.activeElement.id==="myin";
+ const L=st.players.slice(0,h).map(pcard).join(""),R=st.players.slice(h).map(pcard).join("");
+ let msg="";
+ if(st.phase==="sold"&&st.last){const p=st.players.find(x=>x.id===st.last.pid);msg=st.last.sold?`🎉 낙찰!<br>${esc(p?p.name:"")} · ${fmt(st.last.price)}`:"유찰... 😢<br>아무도 사지 않았어요"}
+ const act=st.phase==="sold"?(st.pos>=st.nI?"가치 공개로 →":"다음 물품 →"):(st.leader==null?"유찰 처리":"낙찰 확정");
+ $("#app").innerHTML=`<div class="stage"><div class="col">${L}</div><div class="ctr">
+ <div class="title">${esc(it.name)} <span style="font-size:13px;color:var(--mut)">(라운드 ${st.R+1} · ${st.pos}/${st.nI})</span></div>
+ <div class="photo">${vis(A[ak(it.uid,1)],it.emoji)}${msg?`<div class="msg"><div>${msg}</div></div>`:""}</div>
+ <div class="price"><small>${st.leader==null?"시작가":"현재 경매가"}</small><b>${fmt(st.cur)}</b></div>
+ <div class="hint" style="margin-bottom:-6px">최소 인상폭 (현재가보다 이 금액 이상 더 부르세요)</div>
+ <div class="chips">${[10000,50000,100000,500000,1000000,5000000].map(v=>`<button class="chip ${st.inc===v?"on":""}" data-inc="${v}" ${host?"":"disabled"}>+${fmt(v).replace("원","")}</button>`).join("")}</div>
+ <div class="hint">${host?"참가자들이 각자 입찰해요. 준비되면 낙찰을 확정하세요.":"원하는 금액을 적고 입찰을 눌러요 (비우면 최소 금액으로 입찰)"} · 최소 입찰 <b>${fmt(st.min)}</b>${st.hostOn?"":" (호스트 연결 끊김)"}</div>
+ <div class="host"><div class="pic">${vis(A[ak("host")],"🎤")}</div><div class="acts">${host?`<button class="btn pri sm" id="act">${act}</button>`:"<span class='hint'>호스트</span>"}${leaveBtn()}</div></div>
+ </div><div class="col">${R}</div></div>`;
+ const mi=$("#myin"),mb=$("#mybid");
+ if(mi){mi.oninput=()=>{const v=fm(mi);draft=v?String(v):""};mi.onkeydown=e=>{if(e.key==="Enter"&&mb)mb.click()};
+  if(had&&!mi.disabled){mi.focus();mi.setSelectionRange(mi.value.length,mi.value.length)}}
+ if(mb)mb.onclick=()=>socket.emit("bid",{price:draft?Number(draft):null});
+ document.querySelectorAll("[data-inc]").forEach(e=>e.onclick=()=>socket.emit("inc",+e.dataset.inc));
+ bindAct();bindLeave();
+}
+
+/* ===== 가치 공개 ===== */
+function revV(){
+ const host=me.role==="host",it=st.item,buy=st.buy,shown=st.shown;
+ const bp=buy&&st.players.find(p=>p.id===buy.pid),d=buy&&shown?st.value-buy.price:0;
+ const rc=p=>`<div class="pl ${buy&&buy.pid===p.id?"lead":""} ${p.on?"":"off"}"><div class="pic">${vis(A[ak("p:"+p.id)],p.emoji)}</div><div class="nm">${esc(p.name)}${p.id===me.pid?" (나)":""}</div><div class="amt">자산 ${fmt(p.money-Math.round(p.loan*(1+st.rate/100)))}</div><div class="bal">${p.loan?"상환 예정 "+fmt(Math.round(p.loan*(1+st.rate/100))):"&nbsp;"}</div></div>`;
+ const n=st.players.length,h=Math.ceil(n/2);
+ const L=st.players.slice(0,h).map(rc).join(""),R=st.players.slice(h).map(rc).join("");
+ const p2=shown?A[ak(it.uid,2)]:null;
+ const last=st.rpos>=st.rn,act=!shown?"💰 가치 공개!":(last?(st.R+1>=st.nR?"최종 결과 보기":"다음 →"):"다음 물품 →");
+ $("#app").innerHTML=`<div class="stage"><div class="col">${L}</div><div class="ctr">
+ <div class="title">${esc(it.name)} <span style="font-size:13px;color:var(--mut)">(가치 공개 ${st.rpos}/${st.rn})</span></div>
+ <div class="photo ${shown&&p2?"pop":""}">${p2?`<img src="${p2}" alt="">`:vis(A[ak(it.uid,1)],it.emoji)}</div>
+ <div class="price"><small>${bp?esc(bp.name)+" 님이 "+fmt(buy.price)+"에 낙찰":"유찰된 물품 (아무도 사지 않았어요)"}</small><small style="margin-top:6px">이 물건의 진짜 가치</small><b class="${shown?"pop":""}">${shown?fmt(st.value):"❓ ???"}</b></div>
+ ${shown?`<div class="hint pop" style="font-size:20px;font-weight:900;color:${col(d)}">${bp?esc(bp.name)+" "+(d>0?"이득":d<0?"손해":"본전")+" "+sg(d):"아무도 사지 않아 놓친 물건이에요 😅"}</div>`:`<div class="hint">${host?"버튼을 누르면 가치가 공개돼요!":"호스트가 가치를 공개하길 기다리는 중..."}</div>`}
+ <div class="host"><div class="pic">${vis(A[ak("host")],"🎤")}</div><div class="acts">${host?`<button class="btn pri" id="act">${act}</button>`:"<span class='hint'>호스트</span>"}${leaveBtn()}</div></div>
+ </div><div class="col">${R}</div></div>`;
+ bindAct();bindLeave();
+}
+
+/* ===== 대출 상환 / 결과 ===== */
+function settleV(){
+ const host=me.role==="host";
+ const rows=st.settle.map(r=>`<tr><td>${esc(r.name)}</td><td>${fmt(r.loan)}</td><td>${fmt(r.interest)}</td><td>${fmt(r.pay)}</td><td style="font-weight:800;color:${r.money<0?"#e0552b":"inherit"}">${fmt(r.money)}</td></tr>`).join("");
+ $("#app").innerHTML=`<h1>💸 대출 상환</h1><p class="sub">원금과 이자 ${st.rate}%를 갚았어요.</p>
+ <div class="panel" style="overflow-x:auto"><table><tr><th>이름</th><th>원금</th><th>이자</th><th>상환액</th><th>상환 후 자산</th></tr>${rows}</table></div>
+ ${host?`<button class="btn pri big" id="act">다음 →</button>`:`<p class="hint">호스트가 넘겨주길 기다리는 중...</p>`}<p>${leaveBtn()}</p>`;
+ bindAct();bindLeave();
+}
+function endV(){
+ const host=me.role==="host",R=st.result;
+ const irows=R.items.map(o=>{const d=o.who?o.value-o.price:0;return `<tr><td>${esc(o.emoji+" "+o.name)}</td><td>${o.who?esc(o.who):"유찰"}</td><td>${o.who?fmt(o.price):"-"}</td><td><b>${fmt(o.value)}</b></td><td style="color:${col(d)};font-weight:800">${o.who?sg(d):"-"}</td></tr>`}).join("");
+ const rrows=R.rank.map((p,k)=>`<tr><td>${k===0?"🏆":k+1}</td><td>${esc(p.name)}</td><td>${fmt(p.cash)}</td><td>${fmt(p.worth)}</td><td><b>${fmt(p.total)}</b></td><td style="color:${col(p.diff)};font-weight:800">${sg(p.diff)}</td></tr>`).join("");
+ $("#app").innerHTML=`<h1>🏁 최종 결과!</h1><p class="sub">${esc(R.rank[0].name)} 님 우승! 총 자산 ${fmt(R.rank[0].total)}</p>
+ <div class="panel"><h2>물품 가치</h2><div style="overflow-x:auto"><table><tr><th>물품</th><th>낙찰자</th><th>낙찰가</th><th>가치</th><th>손익</th></tr>${irows}</table></div></div>
+ <div class="panel"><h2>최종 자산 순위</h2><div style="overflow-x:auto"><table><tr><th>순위</th><th>이름</th><th>잔액</th><th>물품 가치</th><th>총 자산</th><th>손익</th></tr>${rrows}</table></div></div>
+ ${host?`<button class="btn pri big" id="again">다시 하기</button>`:`<p class="hint">호스트가 다시 시작하길 기다리는 중...</p>`}<p>${leaveBtn()}</p>`;
+ const a=$("#again");if(a)a.onclick=()=>socket.emit("restart");
+ bindLeave();
+}
+home();
+
+</script>
+</body>
+</html>
