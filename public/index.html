@@ -79,7 +79,16 @@ td,th{padding:8px;border-bottom:1px solid var(--mut);text-align:left;font-size:1
 .code{background:var(--gold);color:#241f1a;border-radius:8px;padding:0 10px;letter-spacing:3px}
 .pl.mine{border-color:var(--acc)}.pl.off{opacity:.5}
 .row input[readonly]{opacity:.8}
-.wrap{padding-top:64px}
+.wrap{padding-top:64px;padding-bottom:110px}
+#toast{bottom:120px}
+#emobar{position:fixed;left:50%;bottom:10px;transform:translateX(-50%);display:flex;flex-wrap:wrap;justify-content:center;width:max-content;max-width:calc(100vw - 16px);gap:2px;background:var(--card);border:2px solid var(--line);border-radius:24px;padding:3px 6px;z-index:9}
+#emobar button{border:0;background:transparent;font-size:20px;padding:2px 5px;cursor:pointer;border-radius:12px;line-height:1.2}
+#emobar button:active{transform:scale(1.35)}
+@media (max-width:480px){#emobar button{font-size:18px;padding:2px 3px}}
+.emo{position:fixed;transform:translate(-50%,-50%);pointer-events:none;z-index:20;text-align:center;animation:fl 2.2s ease-out forwards}
+.emo span{display:block;font-size:44px;line-height:1}
+.emo small{display:inline-block;font-size:12px;font-weight:800;background:var(--card);border:2px solid var(--line);border-radius:10px;padding:0 6px}
+@keyframes fl{0%{opacity:0;transform:translate(-50%,-30%) scale(.5)}15%{opacity:1;transform:translate(-50%,-60%) scale(1.25)}100%{opacity:0;transform:translate(-50%,-260%) scale(1)}}
 
 </style>
 </head>
@@ -208,7 +217,7 @@ socket.on("connect",()=>{
 });
 socket.on("state",s=>{
  const o=st;st=s;
- if(o&&(o.cur!==s.cur||o.phase!==s.phase||(o.item&&s.item&&o.item.uid!==s.item.uid)))draft="";
+ if(o&&(o.phase!==s.phase||(o.item&&s.item&&o.item.uid!==s.item.uid)||(me&&s.leader===me.pid&&o.leader!==s.leader)))draft="";
  if(!o||o.phase!==s.phase)ldraft=null;
  snd(o,s);render();
 });
@@ -216,6 +225,7 @@ socket.on("asset",a=>{A[a.key]=a.data;if(me&&st)render()});
 socket.on("assets",a=>{Object.assign(A,a)});
 socket.on("cfg",c=>{if(me&&me.role==="host"&&!cfg){cfg=c;cfg.hostImg=null;cfg.rounds.forEach(r=>r.items.forEach(o=>{o.img=null;o.img2=null}));saveCfg()}});
 socket.on("toast",toast);
+socket.on("emo",d=>floatEmo(d));
 
 function doJoin(code,silent){
  socket.emit("join",{code,token,name:prof.name,emoji:prof.emoji,img:prof.img},res=>{
@@ -259,6 +269,7 @@ function snd(o,s){
 
 /* ===== 홈 ===== */
 function home(){
+ eb.style.display="none";
  $("#app").innerHTML=`<h1>🔨 경매의 신!</h1><p class="sub">방을 만들고 코드를 공유하면, 친구들이 각자 컴퓨터나 폰에서 입찰해요. 계정은 필요 없어요.</p>
  <div class="panel"><h2>호스트로 방 만들기</h2><button class="btn pri big" id="mk">방 만들기</button></div>
  <div class="panel"><h2>친구 방에 참가하기</h2>
@@ -276,6 +287,7 @@ function home(){
 /* ===== 렌더 ===== */
 function render(){
  if(!me||!st)return;
+ eb.style.display="flex";
  const v=st.phase+":"+me.role;
  if(st.phase==="lobby"){if(view===v){updLobby();return}view=v;lobby();return}
  view=v;
@@ -286,7 +298,7 @@ const bindLeave=()=>{const b=$("#lv");if(b)b.onclick=()=>arm(b,"정말 나갈까
 const bindAct=()=>{const a=$("#act");if(a)a.onclick=()=>socket.emit("adv")};
 
 /* ===== 로비 ===== */
-function plist(){return st.players.map(p=>`<div class="row"><div class="av">${vis(A[ak("p:"+p.id)],p.emoji)}</div><b>${esc(p.name)}</b>${p.id===me.pid?" (나)":""}${p.on?"":" <span class='hint'>연결 끊김</span>"}</div>`).join("")||"<p class='hint' style='text-align:left'>아직 아무도 없어요</p>"}
+function plist(){return st.players.map(p=>`<div class="row" data-pid="${p.id}"><div class="av">${vis(A[ak("p:"+p.id)],p.emoji)}</div><b>${esc(p.name)}</b>${p.id===me.pid?" (나)":""}${p.on?"":" <span class='hint'>연결 끊김</span>"}</div>`).join("")||"<p class='hint' style='text-align:left'>아직 아무도 없어요</p>"}
 function updLobby(){const l=$("#plist");if(l){l.innerHTML=plist();$("#cnt").textContent=`(${st.players.length}/8)`}}
 function lobby(){
  const host=me.role==="host";
@@ -296,7 +308,7 @@ function lobby(){
  <div class="row"><input type="text" readonly id="lnk" value="${location.origin}/?room=${st.code}"><button class="btn sm" id="cp">복사</button></div>
  <div class="panel"><h2>참가자 <span id="cnt"></span></h2><div id="plist"></div></div>
  ${host?`<div class="panel"><h2>설정</h2>
-  <div class="row"><span>시작 금액</span><input class="num" type="text" inputmode="numeric" id="bud" value="${cfg.budget.toLocaleString("ko-KR")}"><span>원</span><span style="margin-left:auto">호스트 사진</span><button class="av" id="hav">${vis(cfg.hostImg,"🎤")}</button></div>
+  <div class="row"><span>시작 금액</span><input class="num" type="text" inputmode="numeric" id="bud" value="${Math.round(cfg.budget/10000).toLocaleString("ko-KR")}"><span>만원</span><span class="hint" id="budfull">= ${fmt(cfg.budget)}</span><span style="margin-left:auto">호스트 사진</span><button class="av" id="hav">${vis(cfg.hostImg,"🎤")}</button></div>
   <div class="row"><span>🏦 대출 이자율</span><input class="num" type="number" id="rate" min="0" max="300" value="${cfg.rate}"><span>% · 3라운드부터 대출 가능</span></div></div>
  <div id="rds"></div><p><button class="btn sm" id="addR">+ 라운드 추가</button></p>
  <button class="btn pri big" id="go">경매 시작!</button>`:""}
@@ -305,7 +317,7 @@ function lobby(){
  $("#cp").onclick=()=>{$("#lnk").select();try{navigator.clipboard.writeText($("#lnk").value)}catch(e){document.execCommand("copy")}toast("링크를 복사했어요")};
  bindLeave();
  if(!host)return;
- $("#bud").oninput=e=>{cfg.budget=Math.max(100000,fm(e.target));sync()};
+ $("#bud").oninput=e=>{cfg.budget=Math.max(100000,fm(e.target)*10000);$("#budfull").textContent="= "+fmt(cfg.budget);sync()};
  $("#rate").oninput=e=>{cfg.rate=Math.max(0,Math.min(300,+e.target.value||0));sync()};
  $("#hav").onclick=()=>pick(d=>{cfg.hostImg=d;A[ak("host")]=d;socket.emit("img",{uid:"host",slot:1,data:d});$("#hav").innerHTML=vis(d,"🎤");saveCfg()});
  $("#addR").onclick=()=>{if(cfg.rounds.length<10){cfg.rounds.push({theme:"",items:[]});rounds();sync()}};
@@ -319,7 +331,7 @@ function rounds(){
   pn.innerHTML=`<h2>라운드 ${ri+1}</h2>
   <div class="row"><span>테마</span><input type="text" maxlength="30" placeholder="예) 보물 사냥" value="${esc(rd.theme)}"><button class="btn sm">라운드 삭제</button></div>
   ${ri>=2?`<div class="row"><span>🏦 대출 한도</span><select class="loansel">${[["대출 없음",0],["1천만원",1e7],["5천만원",5e7],["1억원",1e8]].map(([t,v])=>`<option value="${v}" ${loanOf(ri)===v?"selected":""}>${t}</option>`).join("")}</select></div>`:""}
-  <p class="hint" style="text-align:left;margin:0 0 8px">사진 · 이름 · 시작가 · 가치(비공개) — 사진 2장: 왼쪽은 경매·가치 공개 전, 오른쪽(+2)은 가치 공개 후</p>
+  <p class="hint" style="text-align:left;margin:0 0 8px">금액은 만원 단위로 적어요 (예: 100 = 100만원) · 사진 · 이름 · 시작가 · 가치(비공개) — 사진 2장: 왼쪽은 경매·가치 공개 전, 오른쪽(+2)은 가치 공개 후</p>
   <div class="its"></div><button class="btn sm">+ 물품 추가</button>`;
   const q=s=>pn.querySelector(s);
   q("input").oninput=e=>{rd.theme=e.target.value;sync()};
@@ -328,12 +340,12 @@ function rounds(){
   const its=q(".its");
   rd.items.forEach((o,ii)=>{
    const r=document.createElement("div");r.className="row";
-   r.innerHTML=`<button class="av" title="1번 사진 (경매·가치 공개 전)">${vis(o.img,o.emoji)}</button><button class="av" title="2번 사진 (가치 공개 후)">${o.img2?`<img src="${o.img2}" alt="">`:"<span style='font-size:13px'>+2</span>"}</button><input type="text" maxlength="14" value="${esc(o.name)}"><input class="num" type="text" inputmode="numeric" value="${o.start.toLocaleString("ko-KR")}" title="시작가" placeholder="시작가"><input class="num" type="text" inputmode="numeric" value="${o.value.toLocaleString("ko-KR")}" title="가치(비공개)" placeholder="가치"><button class="btn sm">삭제</button>`;
+   r.innerHTML=`<button class="av" title="1번 사진 (경매·가치 공개 전)">${vis(o.img,o.emoji)}</button><button class="av" title="2번 사진 (가치 공개 후)">${o.img2?`<img src="${o.img2}" alt="">`:"<span style='font-size:13px'>+2</span>"}</button><input type="text" maxlength="14" value="${esc(o.name)}"><input class="num" type="text" inputmode="numeric" value="${Math.round(o.start/10000).toLocaleString("ko-KR")}" title="시작가 (만원 단위, 예: 100 = 100만원)" placeholder="시작가(만원)"><input class="num" type="text" inputmode="numeric" value="${Math.round(o.value/10000).toLocaleString("ko-KR")}" title="가치 (만원 단위, 비공개)" placeholder="가치(만원)"><button class="btn sm">삭제</button>`;
    r.children[0].onclick=()=>pick(d=>{o.img=d;socket.emit("img",{uid:o.uid,slot:1,data:d});rounds();saveCfg()},1280);
    r.children[1].onclick=()=>pick(d=>{o.img2=d;socket.emit("img",{uid:o.uid,slot:2,data:d});rounds();saveCfg()},1280);
    r.children[2].oninput=e=>{o.name=e.target.value;sync()};
-   r.children[3].oninput=e=>{o.start=fm(e.target);sync()};
-   r.children[4].oninput=e=>{o.value=fm(e.target);sync()};
+   r.children[3].oninput=e=>{o.start=fm(e.target)*10000;sync()};
+   r.children[4].oninput=e=>{o.value=fm(e.target)*10000;sync()};
    r.children[5].onclick=()=>{rd.items.splice(ii,1);rounds();sync()};
    its.append(r)});
   q(".its + button").onclick=()=>{if(rd.items.length<12){rd.items.push({uid:"i"+Math.random().toString(36).slice(2,10),name:"새 물품",emoji:"📦",start:1000000,value:1500000,img:null,img2:null});rounds();sync()}};
@@ -356,16 +368,16 @@ function introV(){
 function loanV(){
  const host=me.role==="host";
  const card=p=>{
-  const mine=p.id===me.pid,v=ldraft!==null?ldraft:(p.loan||0);
-  return `<div class="pl ${mine?"mine":""}"><div class="pic">${vis(A[ak("p:"+p.id)],p.emoji)}</div><div class="nm">${esc(p.name)}${mine?" (나)":""}</div><div class="amt">잔액 ${fmt(p.money)}</div><div class="bal">${p.loan?"대출 "+fmt(p.loan)+" → 상환 "+fmt(Math.round(p.loan*(1+st.rate/100))):"대출 없음"}</div>${mine?`<input class="bidin" id="lin" type="text" inputmode="numeric" placeholder="0 ~ ${st.limit.toLocaleString("ko-KR")}" value="${v?Number(v).toLocaleString("ko-KR"):""}"><button class="btn pri bidbtn" id="lbtn">대출받기</button>`:""}</div>`};
+  const mine=p.id===me.pid,v=ldraft!==null?ldraft:(p.loan?p.loan/10000:0);
+  return `<div class="pl ${mine?"mine":""}" data-pid="${p.id}"><div class="pic">${vis(A[ak("p:"+p.id)],p.emoji)}</div><div class="nm">${esc(p.name)}${mine?" (나)":""}</div><div class="amt">잔액 ${fmt(p.money)}</div><div class="bal">${p.loan?"대출 "+fmt(p.loan)+" → 상환 "+fmt(Math.round(p.loan*(1+st.rate/100))):"대출 없음"}</div>${mine?`<input class="bidin" id="lin" type="text" inputmode="numeric" placeholder="0 ~ ${(st.limit/10000).toLocaleString("ko-KR")}만원" value="${v?Number(v).toLocaleString("ko-KR"):""}"><button class="btn pri bidbtn" id="lbtn">대출받기</button><div class="hint" style="font-size:11px;margin-top:4px">만원 단위로 적어요</div>`:""}</div>`};
  const had=document.activeElement&&document.activeElement.id==="lin";
- $("#app").innerHTML=`<h1>🏦 대출 시간</h1><p class="sub">1인당 한도 ${fmt(st.limit)} · 이자 ${st.rate}% — 이번 라운드가 끝나면 원금과 이자를 갚아야 해요. 필요한 만큼만 빌리세요!</p>
+ $("#app").innerHTML=`<h1>🏦 대출 시간</h1><p class="sub">1인당 한도 ${fmt(st.limit)} · 이자 ${st.rate}% — 이번 라운드가 끝나면 원금과 이자를 갚아야 해요. 필요한 만큼만 빌리세요! (금액은 만원 단위로 적어요)</p>
  <div class="panel"><div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:12px">${st.players.map(card).join("")}</div></div>
  ${host?`<button class="btn pri big" id="act">🔨 경매 시작</button>`:`<p class="hint">내 카드에 금액을 적고 "대출받기"를 눌러요. 호스트가 시작하면 경매가 열려요.</p>`}
  <p>${leaveBtn()}</p>`;
  const li=$("#lin");
  if(li){li.oninput=()=>{ldraft=String(fm(li))};li.onkeydown=e=>{if(e.key==="Enter")$("#lbtn").click()};
-  $("#lbtn").onclick=()=>{const a=Number(li.value.replace(/,/g,""))||0;if(a>st.limit)toast(`한도는 ${fmt(st.limit)}예요`);socket.emit("loan",{amt:a});ldraft=null};
+  $("#lbtn").onclick=()=>{const a=(Number(li.value.replace(/,/g,""))||0)*10000;if(a>st.limit)toast(`한도는 ${fmt(st.limit)}예요`);socket.emit("loan",{amt:a});ldraft=null};
   if(had){li.focus();li.setSelectionRange(li.value.length,li.value.length)}}
  bindAct();bindLeave();
 }
@@ -373,7 +385,7 @@ function loanV(){
 /* ===== 경매 ===== */
 function pcard(p){
  const lead=st.leader===p.id,mine=me.pid===p.id,b=st.bids[p.id],can=mine&&st.phase==="auction"&&!lead;
- return `<div class="pl ${lead?"lead":""} ${mine?"mine":""} ${p.on?"":"off"}"><div class="pic">${vis(A[ak("p:"+p.id)],p.emoji)}</div><div class="nm">${esc(p.name)}${mine?" (나)":""}</div><div class="amt">${b?fmt(b):"-"}</div><div class="bal">잔액 ${fmt(p.money)}</div>${mine?`<input class="bidin" id="myin" type="text" inputmode="numeric" placeholder="${st.min.toLocaleString("ko-KR")}" value="${draft?Number(draft).toLocaleString("ko-KR"):""}" ${can?"":"disabled"}><button class="btn pri bidbtn" id="mybid" ${can?"":"disabled"}>${lead?"최고가!":"입찰"}</button>`:""}</div>`;
+ return `<div class="pl ${lead?"lead":""} ${mine?"mine":""} ${p.on?"":"off"}" data-pid="${p.id}"><div class="pic">${vis(A[ak("p:"+p.id)],p.emoji)}</div><div class="nm">${esc(p.name)}${mine?" (나)":""}</div><div class="amt">${b?fmt(b):"-"}</div><div class="bal">잔액 ${fmt(p.money)}</div>${mine?`<input class="bidin" id="myin" type="text" inputmode="numeric" placeholder="${Math.ceil(st.min/10000).toLocaleString("ko-KR")}만원 이상" value="${draft?Number(draft).toLocaleString("ko-KR"):""}" ${can?"":"disabled"}><button class="btn pri bidbtn" id="mybid" ${can?"":"disabled"}>${lead?"최고가!":"입찰"}</button><div class="hint" id="myfull" style="font-size:11px;margin-top:4px">${draft?"= "+fmt(Number(draft)*10000):"만원 단위로 적어요"}</div>`:""}</div>`;
 }
 function stage(){
  const host=me.role==="host",it=st.item,n=st.players.length,h=Math.ceil(n/2);
@@ -388,13 +400,13 @@ function stage(){
  <div class="price"><small>${st.leader==null?"시작가":"현재 경매가"}</small><b>${fmt(st.cur)}</b></div>
  <div class="hint" style="margin-bottom:-6px">최소 인상폭 (현재가보다 이 금액 이상 더 부르세요)</div>
  <div class="chips">${[10000,50000,100000,500000,1000000,5000000].map(v=>`<button class="chip ${st.inc===v?"on":""}" data-inc="${v}" ${host?"":"disabled"}>+${fmt(v).replace("원","")}</button>`).join("")}</div>
- <div class="hint">${host?"참가자들이 각자 입찰해요. 준비되면 낙찰을 확정하세요.":"원하는 금액을 적고 입찰을 눌러요 (비우면 최소 금액으로 입찰)"} · 최소 입찰 <b>${fmt(st.min)}</b>${st.hostOn?"":" (호스트 연결 끊김)"}</div>
+ <div class="hint">${host?"참가자들이 각자 입찰해요. 준비되면 낙찰을 확정하세요.":"원하는 금액을 만원 단위로 적고 입찰을 눌러요 (예: 300 = 300만원 · 비우면 최소 금액으로 입찰)"} · 최소 입찰 <b>${fmt(st.min)}</b>${st.hostOn?"":" (호스트 연결 끊김)"}</div>
  <div class="host"><div class="pic">${vis(A[ak("host")],"🎤")}</div><div class="acts">${host?`<button class="btn pri sm" id="act">${act}</button>`:"<span class='hint'>호스트</span>"}${leaveBtn()}</div></div>
  </div><div class="col">${R}</div></div>`;
  const mi=$("#myin"),mb=$("#mybid");
- if(mi){mi.oninput=()=>{const v=fm(mi);draft=v?String(v):""};mi.onkeydown=e=>{if(e.key==="Enter"&&mb)mb.click()};
+ if(mi){mi.oninput=()=>{const v=fm(mi);draft=v?String(v):"";const f=$("#myfull");if(f)f.textContent=draft?"= "+fmt(v*10000):"만원 단위로 적어요"};mi.onkeydown=e=>{if(e.key==="Enter"&&mb)mb.click()};
   if(had&&!mi.disabled){mi.focus();mi.setSelectionRange(mi.value.length,mi.value.length)}}
- if(mb)mb.onclick=()=>socket.emit("bid",{price:draft?Number(draft):null});
+ if(mb)mb.onclick=()=>socket.emit("bid",{price:draft?Number(draft)*10000:null});
  document.querySelectorAll("[data-inc]").forEach(e=>e.onclick=()=>socket.emit("inc",+e.dataset.inc));
  bindAct();bindLeave();
 }
@@ -403,7 +415,7 @@ function stage(){
 function revV(){
  const host=me.role==="host",it=st.item,buy=st.buy,shown=st.shown;
  const bp=buy&&st.players.find(p=>p.id===buy.pid),d=buy&&shown?st.value-buy.price:0;
- const rc=p=>`<div class="pl ${buy&&buy.pid===p.id?"lead":""} ${p.on?"":"off"}"><div class="pic">${vis(A[ak("p:"+p.id)],p.emoji)}</div><div class="nm">${esc(p.name)}${p.id===me.pid?" (나)":""}</div><div class="amt">자산 ${fmt(p.money-Math.round(p.loan*(1+st.rate/100)))}</div><div class="bal">${p.loan?"상환 예정 "+fmt(Math.round(p.loan*(1+st.rate/100))):"&nbsp;"}</div></div>`;
+ const rc=p=>`<div class="pl ${buy&&buy.pid===p.id?"lead":""} ${p.on?"":"off"}" data-pid="${p.id}"><div class="pic">${vis(A[ak("p:"+p.id)],p.emoji)}</div><div class="nm">${esc(p.name)}${p.id===me.pid?" (나)":""}</div><div class="amt">자산 ${fmt(p.money-Math.round(p.loan*(1+st.rate/100)))}</div><div class="bal">${p.loan?"상환 예정 "+fmt(Math.round(p.loan*(1+st.rate/100))):"&nbsp;"}</div></div>`;
  const n=st.players.length,h=Math.ceil(n/2);
  const L=st.players.slice(0,h).map(rc).join(""),R=st.players.slice(h).map(rc).join("");
  const p2=shown?A[ak(it.uid,2)]:null;
@@ -437,6 +449,21 @@ function endV(){
  ${host?`<button class="btn pri big" id="again">다시 하기</button>`:`<p class="hint">호스트가 다시 시작하길 기다리는 중...</p>`}<p>${leaveBtn()}</p>`;
  const a=$("#again");if(a)a.onclick=()=>socket.emit("restart");
  bindLeave();
+}
+const EMOS=["👏","😂","😱","🔥","😭","😎","🤑","💸","👍","🎉","🤔","😡","😏"];
+const eb=document.createElement("div");eb.id="emobar";eb.style.display="none";
+eb.innerHTML=EMOS.map(e=>`<button data-e="${e}">${e}</button>`).join("");
+document.body.append(eb);
+eb.onclick=e=>{const b=e.target.closest("button");if(b&&me)socket.emit("emo",b.dataset.e)};
+function floatEmo(d){
+ const sender=d.who==="host"?null:(st&&st.players.find(p=>p.id===d.who));
+ const name=d.who==="host"?"호스트":(sender?sender.name:"");
+ const el=d.who==="host"?document.querySelector(".host .pic"):document.querySelector(`[data-pid="${d.who}"]`);
+ const r=el?el.getBoundingClientRect():{left:innerWidth/2,top:innerHeight-110,width:0,height:0};
+ const n=document.createElement("div");n.className="emo";
+ n.innerHTML=`<span>${d.e}</span><small>${esc(name)}</small>`;
+ n.style.left=(r.left+r.width/2)+"px";n.style.top=(r.top+r.height/2)+"px";
+ document.body.append(n);setTimeout(()=>n.remove(),2300);
 }
 home();
 
