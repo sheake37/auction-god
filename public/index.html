@@ -398,8 +398,8 @@ function stage(){
  <div class="title">${esc(it.name)} <span style="font-size:13px;color:var(--mut)">(라운드 ${st.R+1} · ${st.pos}/${st.nI})</span></div>
  <div class="photo">${vis(A[ak(it.uid,1)],it.emoji)}${msg?`<div class="msg"><div>${msg}</div></div>`:""}</div>
  <div class="price"><small>${st.leader==null?"시작가":"현재 경매가"}</small><b>${fmt(st.cur)}</b></div>
- <div class="hint" style="margin-bottom:-6px">최소 인상폭 (현재가보다 이 금액 이상 더 부르세요)</div>
- <div class="chips">${[10000,50000,100000,500000,1000000,5000000].map(v=>`<button class="chip ${st.inc===v?"on":""}" data-inc="${v}" ${host?"":"disabled"}>+${fmt(v).replace("원","")}</button>`).join("")}</div>
+ ${host?`<div class="hint" style="margin-bottom:-6px">최소 인상폭 설정 (현재가보다 이 금액 이상 더 부르게 돼요 · 참가자에게는 안 보여요)</div>
+ <div class="chips">${[10000,50000,100000,500000,1000000,5000000].map(v=>`<button class="chip ${st.inc===v?"on":""}" data-inc="${v}">+${fmt(v).replace("원","")}</button>`).join("")}</div>`:`<div class="hint">최소 입찰금액 <b style="font-size:20px;color:var(--acc)">${fmt(st.min)}</b></div>`}
  <div class="hint">${host?"참가자들이 각자 입찰해요. 준비되면 낙찰을 확정하세요.":"원하는 금액을 만원 단위로 적고 입찰을 눌러요 (예: 300 = 300만원 · 비우면 최소 금액으로 입찰)"} · 최소 입찰 <b>${fmt(st.min)}</b>${st.hostOn?"":" (호스트 연결 끊김)"}</div>
  <div class="host"><div class="pic">${vis(A[ak("host")],"🎤")}</div><div class="acts">${host?`<button class="btn pri sm" id="act">${act}</button>`:"<span class='hint'>호스트</span>"}${leaveBtn()}</div></div>
  </div><div class="col">${R}</div></div>`;
