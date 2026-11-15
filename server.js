@@ -72,6 +72,15 @@ io.on("connection", (s) => {
     flush(r);
   });
 
+  const EMO = ["👏", "😂", "😱", "🔥", "😭", "😎", "🤑", "💸", "👍", "🎉", "🤔", "😡", "😏"];
+  s.on("emo", (e) => {
+    const r = room(); if (!r || !EMO.includes(e)) return;
+    const now = Date.now();
+    if (now - (s.data.lastEmo || 0) < 500) return;
+    s.data.lastEmo = now;
+    io.to(r.code).emit("emo", { who: s.data.role === "host" ? "host" : s.data.pid, e });
+  });
+
   s.on("disconnect", () => {
     const r = room(); if (!r) return;
     if (s.data.role === "host") r.hostOn = false;
