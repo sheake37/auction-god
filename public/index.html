@@ -85,10 +85,11 @@ td,th{padding:8px;border-bottom:1px solid var(--mut);text-align:left;font-size:1
 #emobar button{border:0;background:transparent;font-size:20px;padding:2px 5px;cursor:pointer;border-radius:12px;line-height:1.2}
 #emobar button:active{transform:scale(1.35)}
 @media (max-width:480px){#emobar button{font-size:18px;padding:2px 3px}}
-.emo{position:fixed;transform:translate(-50%,-50%);pointer-events:none;z-index:20;text-align:center;animation:fl 2.2s ease-out forwards}
-.emo span{display:block;font-size:44px;line-height:1}
-.emo small{display:inline-block;font-size:12px;font-weight:800;background:var(--card);border:2px solid var(--line);border-radius:10px;padding:0 6px}
-@keyframes fl{0%{opacity:0;transform:translate(-50%,-30%) scale(.5)}15%{opacity:1;transform:translate(-50%,-60%) scale(1.25)}100%{opacity:0;transform:translate(-50%,-260%) scale(1)}}
+.bub{position:fixed;z-index:20;pointer-events:none;background:#fff;color:#241f1a;border:3px solid var(--line);border-radius:18px;padding:2px 12px 4px;font-size:34px;line-height:1.2;box-shadow:0 4px 10px rgba(0,0,0,.25);animation:pop2 .28s ease-out}
+.bub.in{transform:translate(-50%,0)}.bub.up{transform:translate(-50%,-100%)}
+.bub::after{content:"";position:absolute;left:50%;bottom:-11px;width:14px;height:14px;background:#fff;border-right:3px solid var(--line);border-bottom:3px solid var(--line);transform:translateX(-50%) rotate(45deg)}
+.bub.out{opacity:0;transition:opacity .4s}
+@keyframes pop2{0%{scale:.3;opacity:0}70%{scale:1.15}100%{scale:1;opacity:1}}
 
 </style>
 </head>
@@ -177,7 +178,8 @@ bw.style.cssText="position:fixed;top:calc(10px + env(safe-area-inset-top,0px));r
 const vs=document.createElement("input");vs.type="range";vs.min=0;vs.max=100;vs.value=Math.round(bgVol*100);
 vs.style.cssText="width:90px;accent-color:var(--acc)";vs.title="BGM 볼륨";
 vs.oninput=()=>{bgVol=vs.value/100;try{localStorage.setItem("auction_bgmvol",String(bgVol))}catch(e){}applyVol()};
-bw.append(vs,bb);document.body.append(bw);
+const lb=document.createElement("button");lb.id="lv";lb.className="btn sm";lb.textContent="나가기";lb.style.display="none";
+bw.append(vs,bb,lb);document.body.append(bw);
 const bgUI=()=>bb.textContent=bgmOn?"🎵 BGM 켜짐":"🔇 BGM 꺼짐";
 bgUI();
 bb.onclick=()=>{bgmOn=!bgmOn;try{localStorage.setItem("auction_bgm",bgmOn?"1":"0")}catch(e){}bgUI();if(bgmOn)bgmStart();else bgmStop()};
@@ -269,7 +271,7 @@ function snd(o,s){
 
 /* ===== 홈 ===== */
 function home(){
- eb.style.display="none";
+ eb.style.display="none";lb.style.display="none";
  $("#app").innerHTML=`<h1>🔨 경매의 신!</h1><p class="sub">방을 만들고 코드를 공유하면, 친구들이 각자 컴퓨터나 폰에서 입찰해요. 계정은 필요 없어요.</p>
  <div class="panel"><h2>호스트로 방 만들기</h2><button class="btn pri big" id="mk">방 만들기</button></div>
  <div class="panel"><h2>친구 방에 참가하기</h2>
@@ -287,14 +289,15 @@ function home(){
 /* ===== 렌더 ===== */
 function render(){
  if(!me||!st)return;
- eb.style.display="flex";
+ eb.style.display="flex";lb.style.display="";
  const v=st.phase+":"+me.role;
  if(st.phase==="lobby"){if(view===v){updLobby();return}view=v;lobby();return}
  view=v;
  ({intro:introV,loan:loanV,auction:stage,sold:stage,reveal:revV,settle:settleV,end:endV})[st.phase]();
 }
-const leaveBtn=()=>`<button class="btn sm" id="lv">나가기</button>`;
-const bindLeave=()=>{const b=$("#lv");if(b)b.onclick=()=>arm(b,"정말 나갈까요?",leave)};
+const leaveBtn=()=>"";
+const bindLeave=()=>{};
+lb.onclick=()=>arm(lb,"정말 나갈까요?",leave);
 const bindAct=()=>{const a=$("#act");if(a)a.onclick=()=>socket.emit("adv")};
 
 /* ===== 로비 ===== */
@@ -400,7 +403,7 @@ function stage(){
  <div class="price"><small>${st.leader==null?"시작가":"현재 경매가"}</small><b>${fmt(st.cur)}</b></div>
  ${host?`<div class="hint" style="margin-bottom:-6px">최소 인상폭 설정 (현재가보다 이 금액 이상 더 부르게 돼요 · 참가자에게는 안 보여요)</div>
  <div class="chips">${[10000,50000,100000,500000,1000000,5000000].map(v=>`<button class="chip ${st.inc===v?"on":""}" data-inc="${v}">+${fmt(v).replace("원","")}</button>`).join("")}</div>`:`<div class="hint">최소 입찰금액 <b style="font-size:20px;color:var(--acc)">${fmt(st.min)}</b></div>`}
- <div class="hint">${host?"참가자들이 각자 입찰해요. 준비되면 낙찰을 확정하세요.":"원하는 금액을 만원 단위로 적고 입찰을 눌러요 (예: 300 = 300만원 · 비우면 최소 금액으로 입찰)"} · 최소 입찰 <b>${fmt(st.min)}</b>${st.hostOn?"":" (호스트 연결 끊김)"}</div>
+ <div class="hint">${host?"참가자들이 각자 입찰해요. 준비되면 낙찰을 확정하세요.":"원하는 금액을 만원 단위로 적고 입찰을 눌러요 (예: 300 = 300만원 · 비우면 최소 금액으로 입찰)"}${host?` · 최소 입찰 <b>${fmt(st.min)}</b>`:""}${st.hostOn?"":" (호스트 연결 끊김)"}</div>
  <div class="host"><div class="pic">${vis(A[ak("host")],"🎤")}</div><div class="acts">${host?`<button class="btn pri sm" id="act">${act}</button>`:"<span class='hint'>호스트</span>"}${leaveBtn()}</div></div>
  </div><div class="col">${R}</div></div>`;
  const mi=$("#myin"),mb=$("#mybid");
@@ -455,15 +458,25 @@ const eb=document.createElement("div");eb.id="emobar";eb.style.display="none";
 eb.innerHTML=EMOS.map(e=>`<button data-e="${e}">${e}</button>`).join("");
 document.body.append(eb);
 eb.onclick=e=>{const b=e.target.closest("button");if(b&&me)socket.emit("emo",b.dataset.e)};
+const BUB={};
 function floatEmo(d){
- const sender=d.who==="host"?null:(st&&st.players.find(p=>p.id===d.who));
- const name=d.who==="host"?"호스트":(sender?sender.name:"");
- const el=d.who==="host"?document.querySelector(".host .pic"):document.querySelector(`[data-pid="${d.who}"]`);
- const r=el?el.getBoundingClientRect():{left:innerWidth/2,top:innerHeight-110,width:0,height:0};
- const n=document.createElement("div");n.className="emo";
- n.innerHTML=`<span>${d.e}</span><small>${esc(name)}</small>`;
- n.style.left=(r.left+r.width/2)+"px";n.style.top=(r.top+r.height/2)+"px";
- document.body.append(n);setTimeout(()=>n.remove(),2300);
+ const who=d.who;
+ if(BUB[who]){BUB[who].remove();clearTimeout(BUB[who]._t)}
+ const n=document.createElement("div");n.className="bub";
+ n.innerHTML=`<span>${d.e}</span>`;
+ document.body.append(n);BUB[who]=n;
+ const find=()=>who==="host"?document.querySelector(".host .pic"):document.querySelector(`[data-pid="${who}"]`);
+ const place=()=>{
+  if(!n.isConnected)return;
+  const el=find();
+  if(el){const r=el.getBoundingClientRect(),card=el.classList.contains("pl");
+   n.classList.toggle("in",card);n.classList.toggle("up",!card);
+   n.style.left=(r.left+r.width/2)+"px";n.style.top=(card?r.top+10:r.top-8)+"px"}
+  else{n.classList.add("up");n.style.left=innerWidth/2+"px";n.style.top=(innerHeight-80)+"px"}
+  requestAnimationFrame(place);
+ };
+ place();
+ n._t=setTimeout(()=>{n.classList.add("out");setTimeout(()=>{n.remove();if(BUB[who]===n)delete BUB[who]},400)},2800);
 }
 home();
 
