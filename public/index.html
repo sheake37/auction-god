@@ -49,6 +49,20 @@ select{font:inherit;color:inherit;background:var(--card);border:2px solid var(--
 .photo img{width:100%;height:100%;object-fit:cover}
 .msg{position:absolute;inset:0;background:rgba(0,0,0,.72);color:#fff;display:grid;place-items:center;text-align:center;font-size:clamp(20px,4vw,34px);font-weight:900;padding:16px}
 .price{text-align:center}
+@media (min-width:761px){.stage .photo{aspect-ratio:auto;height:clamp(200px,calc(100vh - 440px),520px)}}
+@media (min-width:761px){.stage .ctr.hv .photo{height:clamp(150px,calc(100vh - 600px),520px)}}
+.pbox{border:4px solid var(--line);border-radius:14px;background:var(--gold);color:#241f1a;padding:4px 12px 6px;text-align:center;box-shadow:0 3px 0 var(--line)}
+.pbox small{display:block;font-weight:800;font-size:13px;opacity:.8}
+.pbox b{display:block;font-size:clamp(30px,6vw,50px);line-height:1.1;font-weight:900;letter-spacing:-1px}
+.hrow{display:flex;gap:12px;align-items:stretch}
+.hrow .host{flex:none;flex-direction:column;gap:2px;justify-content:center}
+.hrow .host .pic{width:92px;height:92px}
+.hrow .mbox{flex:1;display:flex;flex-direction:column;justify-content:center;min-width:0}
+.mbox{border:4px solid var(--acc);border-radius:16px;background:var(--card);padding:8px 12px;text-align:center}
+.mbox small{display:block;font-weight:800;font-size:14px;color:var(--mut)}
+.mbox b{display:block;font-size:clamp(28px,6vw,46px);line-height:1.15;font-weight:900;color:var(--acc)}
+.pbox.bump,.mbox.bump{animation:bmp .45s}
+@keyframes bmp{0%{transform:scale(1)}40%{transform:scale(1.06)}100%{transform:scale(1)}}
 .price small{color:var(--mut);display:block;font-weight:700}
 .price b{font-size:clamp(30px,6vw,48px);color:var(--acc)}
 .bar{height:8px;border:2px solid var(--line);border-radius:6px;overflow:hidden;background:var(--card)}
@@ -397,15 +411,18 @@ function stage(){
  let msg="";
  if(st.phase==="sold"&&st.last){const p=st.players.find(x=>x.id===st.last.pid);msg=st.last.sold?`🎉 낙찰!<br>${esc(p?p.name:"")} · ${fmt(st.last.price)}`:"유찰... 😢<br>아무도 사지 않았어요"}
  const act=st.phase==="sold"?(st.pos>=st.nI?"가치 공개로 →":"다음 물품 →"):(st.leader==null?"유찰 처리":"낙찰 확정");
- $("#app").innerHTML=`<div class="stage"><div class="col">${L}</div><div class="ctr">
+ $("#app").innerHTML=`<div class="stage"><div class="col">${L}</div><div class="ctr ${host?"hv":""}">
  <div class="title">${esc(it.name)} <span style="font-size:13px;color:var(--mut)">(라운드 ${st.R+1} · ${st.pos}/${st.nI})</span></div>
  <div class="photo">${vis(A[ak(it.uid,1)],it.emoji)}${msg?`<div class="msg"><div>${msg}</div></div>`:""}</div>
- <div class="price"><small>${st.leader==null?"시작가":"현재 경매가"}</small><b>${fmt(st.cur)}</b></div>
+ <div class="pbox" id="pbox"><small>${st.leader==null?"🏷️ 시작가":"💰 현재 경매가"}</small><b>${fmt(st.cur)}</b></div>
+ <div class="hrow"><div class="host"><div class="pic">${vis(A[ak("host")],"🎤")}</div><small class="hint" style="text-align:center">호스트</small></div><div class="mbox" id="mbox"><small>⬆️ 최소 입찰금액 (이 금액 이상으로 입찰)</small><b>${fmt(st.min)}</b></div></div>
  ${host?`<div class="hint" style="margin-bottom:-6px">최소 인상폭 설정 (현재가보다 이 금액 이상 더 부르게 돼요 · 참가자에게는 안 보여요)</div>
- <div class="chips">${[10000,50000,100000,500000,1000000,5000000].map(v=>`<button class="chip ${st.inc===v?"on":""}" data-inc="${v}">+${fmt(v).replace("원","")}</button>`).join("")}</div>`:`<div class="hint">최소 입찰금액 <b style="font-size:20px;color:var(--acc)">${fmt(st.min)}</b></div>`}
- <div class="hint">${host?"참가자들이 각자 입찰해요. 준비되면 낙찰을 확정하세요.":"원하는 금액을 만원 단위로 적고 입찰을 눌러요 (예: 300 = 300만원 · 비우면 최소 금액으로 입찰)"}${host?` · 최소 입찰 <b>${fmt(st.min)}</b>`:""}${st.hostOn?"":" (호스트 연결 끊김)"}</div>
- <div class="host"><div class="pic">${vis(A[ak("host")],"🎤")}</div><div class="acts">${host?`<button class="btn pri sm" id="act">${act}</button>`:"<span class='hint'>호스트</span>"}${leaveBtn()}</div></div>
+ <div class="chips">${[10000,50000,100000,500000,1000000,5000000].map(v=>`<button class="chip ${st.inc===v?"on":""}" data-inc="${v}">+${fmt(v).replace("원","")}</button>`).join("")}</div>`:""}
+ <div class="hint">${host?"참가자들이 각자 입찰해요. 준비되면 낙찰을 확정하세요.":"원하는 금액을 만원 단위로 적고 입찰을 눌러요 (예: 300 = 300만원 · 비우면 최소 금액으로 입찰)"}${st.hostOn?"":" (호스트 연결 끊김)"}</div>
+ <div class="host"><div class="acts" style="flex-direction:row;align-items:center">${host?`<button class="btn pri" id="act">${act}</button>`:""}</div></div>
  </div><div class="col">${R}</div></div>`;
+ if(stage.last!==undefined&&stage.last!==st.cur&&st.phase==="auction"){["pbox","mbox"].forEach(i=>{const e=$("#"+i);e&&e.classList.add("bump")})}
+ stage.last=st.cur;
  const mi=$("#myin"),mb=$("#mybid");
  if(mi){mi.oninput=()=>{const v=fm(mi);draft=v?String(v):"";const f=$("#myfull");if(f)f.textContent=draft?"= "+fmt(v*10000):"만원 단위로 적어요"};mi.onkeydown=e=>{if(e.key==="Enter"&&mb)mb.click()};
   if(had&&!mi.disabled){mi.focus();mi.setSelectionRange(mi.value.length,mi.value.length)}}
