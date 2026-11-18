@@ -100,6 +100,10 @@ td,th{padding:8px;border-bottom:1px solid var(--mut);text-align:left;font-size:1
 #emobar{position:fixed;left:50%;bottom:10px;transform:translateX(-50%);display:flex;flex-wrap:wrap;justify-content:center;width:max-content;max-width:calc(100vw - 16px);gap:2px;background:var(--card);border:2px solid var(--line);border-radius:24px;padding:3px 6px;z-index:9}
 #emobar button{border:0;background:transparent;font-size:20px;padding:2px 5px;cursor:pointer;border-radius:12px;line-height:1.2}
 #emobar button:active{transform:scale(1.35)}
+#emobar button[data-t]{font-size:12px;font-weight:800;padding:2px 8px;border:2px solid var(--line);border-radius:12px;background:var(--bg);margin-right:4px;align-self:center;white-space:nowrap}
+#emobar.closed button[data-e]{display:none}
+#emobar.closed{padding:3px}
+#emobar.closed button[data-t]{margin:0}
 @media (max-width:480px){#emobar button{font-size:18px;padding:2px 3px}}
 .bub{position:fixed;z-index:20;pointer-events:none;background:#fff;color:#241f1a;border:3px solid var(--line);border-radius:18px;padding:2px 12px 4px;font-size:34px;line-height:1.2;box-shadow:0 4px 10px rgba(0,0,0,.25);animation:pop2 .28s ease-out}
 .bub.in{transform:translate(-50%,0)}.bub.up{transform:translate(-50%,-100%)}
@@ -474,9 +478,11 @@ function endV(){
 }
 const EMOS=["👏","😂","😱","🔥","😭","😎","🤑","💸","👍","🎉","🤔","😡","😏"];
 const eb=document.createElement("div");eb.id="emobar";eb.style.display="none";
-eb.innerHTML=EMOS.map(e=>`<button data-e="${e}">${e}</button>`).join("");
+eb.innerHTML=`<button data-t="1" id="emotog" title="이모티콘 접기/펼치기"></button>`+EMOS.map(e=>`<button data-e="${e}">${e}</button>`).join("");
+let emoOpen=LS.get("aog_emo")!=="0";
+const emoUI=()=>{eb.classList.toggle("closed",!emoOpen);eb.querySelector("#emotog").textContent=emoOpen?"▾ 접기":"😀 이모티콘"};emoUI();
 document.body.append(eb);
-eb.onclick=e=>{const b=e.target.closest("button");if(b&&me)socket.emit("emo",b.dataset.e)};
+eb.onclick=e=>{const b=e.target.closest("button");if(!b)return;if(b.dataset.t){emoOpen=!emoOpen;LS.set("aog_emo",emoOpen?"1":"0");emoUI();return}if(me)socket.emit("emo",b.dataset.e)};
 const BUB={};
 function floatEmo(d){
  const who=d.who;
